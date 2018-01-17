@@ -1,2 +1,2 @@
 # me194290.github.io
-personal website
+a personal website
