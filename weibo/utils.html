@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900"
+          rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@5.x/css/materialdesignicons.min.css"
+          rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/vuetify@2.5.6/dist/vuetify.min.css"
+          rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Material+Icons"
+          rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/vuetify@2.5.6/dist/vuetify.min.css"
+          rel="stylesheet">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script>
+        const alphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+        function base62_encode(num) {
+            if (num == 0) {
+                return alphabet[0]
+            }
+            num = Number(num);
+            var arr = [];
+            var base = alphabet.length;
+            while (num) {
+                var rem = num % base
+                num = parseInt(num / base)
+                arr.push(alphabet[rem])
+            }
+            return arr.reverse().join('')
+        }
+
+        function base62_decode(string) {
+            var idx = 0;
+            var num = 0;
+            for (let char of string.split('')) {
+                var power = (string.length - (idx + 1));
+                num += alphabet.indexOf(char) * (alphabet.length ** power)
+                idx++;
+            }
+            return num;
+        }
+
+        function mid_to_base62(mid) {
+            mid = (mid + "").split("").reverse().join("");
+            var size = Math.ceil(mid.length / 7);
+            var result = [];
+            for (var i = 0; i < size; i++) {
+                var s = mid.slice(i * 7, (i + 1) * 7).split("").reverse().join("")
+                s = base62_encode(parseInt(s))
+                if ((i < size - 1) && s.length < 4) {
+                    s = '0'.repeat(4 - s.length) + s
+                }
+                result.push(s)
+            }
+            return result.reverse().join('')
+        }
+
+        function base62_to_mid(base62) {
+            base62 = base62.split('').reverse().join('');
+            var size = Math.ceil(base62.length / 4);
+            var result = [];
+            for (var i = 0; i < size; i++) {
+                var s = base62.slice(i * 4, (i + 1) * 4).split('').reverse().join('')
+                s = base62_decode(s) + "";
+                if (i < size - 1 && s.length < 7) {
+                    s = '0'.repeat(7 - s.length) + s;
+                }
+                result.push(s);
+            }
+            return result.reverse().join('')
+        }
+
+    </script>
+</head>
+<body>
+
+
+<div id="app">
+    <v-app id="inspire">
+        <v-container fluid>
+            <v-row>
+                <v-col cols="12" sm="1">
+                    <v-btn
+                            v-on:click="btn_switch_click"
+                            color="primary"
+                    >
+                        {{btn_switch_name}}
+                    </v-btn>
+                </v-col>
+            </v-row>
+            <v-row>
+                <v-col
+                        cols="12"
+                        sm="6"
+                >
+                    <v-textarea
+                            v-model="message"
+                            outlined
+                            rows="20"
+                    ></v-textarea>
+                </v-col>
+                <v-col
+                        cols="12"
+                        sm="6"
+                >
+                    <v-textarea
+                            v-bind:value="convert"
+                            filled
+                            outlined
+                            rows="20"
+                            readonly
+                    ></v-textarea>
+                </v-col>
+
+            </v-row>
+        </v-container>
+    </v-app>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+<!--    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>-->
+<script src="https://cdn.jsdelivr.net/npm/vuetify@2.5.6/dist/vuetify.js"></script>
+<script>
+    var modes = ['提取链接', '提取mid'];
+    var link_regexp = new RegExp("weibo\\.(?:com|cn)/(\\d+)/([a-zA-Z0-9]+)");
+    var mid_regexp = new RegExp("^[a-zA-Z0-9]+$");
+    var base62_mid_regexp = new RegExp("^[a-zA-Z0-9]{7,12}$");
+    var base10_mid_regexp = new RegExp("^[0-9]{14,18}$");
+
+    function convert_mid(mid) {
+        if (base62_mid_regexp.test(mid)) {
+            mid = base62_to_mid(mid);
+        } else if (base10_mid_regexp.test(mid)) {
+
+        } else {
+            mid = "[转换失败]格式不支持";
+        }
+        return mid;
+    }
+
+    function extract_link(lines) {
+        var result = [];
+        for (let line of lines) {
+            if ((link_regexp.test(line))) {
+                var groups = line.match(link_regexp);
+                var uid = groups[1];
+                var mid = groups[2];
+                if (base10_mid_regexp.test(mid)) {
+                    mid = mid_to_base62(mid);
+                }
+                result.push("https://weibo.com/" + uid + "/" + mid);
+            } else {
+                result.push("[转换失败]格式不支持");
+            }
+        }
+        return result.join('\n');
+    }
+
+    function extract_mid(lines) {
+        var result = [];
+        for (let line of lines) {
+            var mid;
+            if ((link_regexp.test(line))) {
+                mid = line.match(link_regexp)[2];
+            } else if (mid_regexp.test(line)) {
+
+            } else {
+                result.push("[转换失败]格式不支持");
+            }
+            result.push(convert_mid(mid));
+
+        }
+        return result.join('\n');
+    }
+
+    var app = new Vue({
+        el: '#app',
+        vuetify: new Vuetify(),
+        data: {
+            message: '',
+            mode: 0
+        },
+        computed: {
+            convert: function () {
+                if (!this.message) {
+                    return "";
+                }
+                var lines = this.message.split("\n");
+                lines.forEach(function (line) {
+                    return line.trim()
+                });
+                if (this.mode == 0) {
+                    return extract_link(lines)
+                } else if (this.mode == 1) {
+                    return extract_mid(lines);
+                }
+                return "";
+            },
+            btn_switch_name: function () {
+                return modes[this.mode];
+            }
+        },
+        methods: {
+            btn_switch_click: function () {
+                var new_mode = this.mode + 1;
+                if (new_mode > modes.length - 1) {
+                    new_mode = 0;
+                }
+                this.mode = new_mode;
+            }
+        }
+    })
+</script>
+</body>
+</html>
