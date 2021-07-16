@@ -167,7 +167,7 @@
             if ((link_regexp.test(line))) {
                 mid = line.match(link_regexp)[2];
             } else if (mid_regexp.test(line)) {
-
+                mid = line;
             } else {
                 result.push("[转换失败]格式不支持");
             }
