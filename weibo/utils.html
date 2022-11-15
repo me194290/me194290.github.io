@@ -125,7 +125,7 @@
 <!--    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>-->
 <script src="https://cdn.jsdelivr.net/npm/vuetify@2.5.6/dist/vuetify.js"></script>
 <script>
-    var modes = ['提取链接', '提取mid'];
+    var modes = ['提取mid', '提取链接'];
     var link_regexp = new RegExp("weibo\\.(?:com|cn)/(\\d+)/([a-zA-Z0-9]+)");
     var mid_regexp = new RegExp("^[a-zA-Z0-9]+$");
     var base62_mid_regexp = new RegExp("^[a-zA-Z0-9]{7,12}$");
@@ -194,9 +194,9 @@
                     return line.trim()
                 });
                 if (this.mode == 0) {
-                    return extract_link(lines)
+                    return extract_mid(lines)
                 } else if (this.mode == 1) {
-                    return extract_mid(lines);
+                    return extract_link(lines);
                 }
                 return "";
             },
